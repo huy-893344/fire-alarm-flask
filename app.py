@@ -1,157 +1,151 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-from flask_socketio import SocketIO
-import paho.mqtt.client as mqtt
-import serial
+import os
 import time
+import requests
+import datetime
+from threading import Thread
 
+from flask import Flask, session, render_template, request, redirect, url_for
+from waitress import serve
+import paho.mqtt.client as mqtt
+
+import firebase_admin
+from firebase_admin import credentials, db
+
+# 1. Khởi tạo Flask + SocketIO
 app = Flask(__name__)
-app.secret_key = "your_secret_key"
+app.secret_key = os.urandom(24)
 
 
-# ================= MQTT Config =================
-mqtt_broker = "localhost"
-mqtt_port = 1883
-mqtt_topics = ["datasensor1", "datasensor2", "datasensor3"]  # hỗ trợ nhiều node
+# 2. Khởi tạo Firebase Admin SDK
+cred = credentials.Certificate("key.json")
+firebase_admin.initialize_app(cred, {
+    "databaseURL": "https://tutrungtambaochay-default-rtdb.firebaseio.com/"
+})
+ref_data = db.reference("/DataSensorRealTime")
+ref_alert = db.reference("/alert")
 
-# ================= SIM Module Serial Config =================
-try:
-    sim_serial = serial.Serial("COM7", 9600, timeout=1)
-except:
-    sim_serial = None  # fallback nếu không kết nối được
+# 3. Cấu hình MQTT
+mqtt_client = mqtt.Client()
 
-phone_number = "+849xxxxxxxx"  # Số điện thoại nhận cảnh báo
+# ===== Định nghĩa hàm callback =====
+# ===== Khởi tạo MQTT client =====
+mqtt_client = mqtt.Client()
 
-# =============== Dummy User ===============
-users = {
-    "anh066214@gmail.com": "123456"
-}
-
-# =============== Settings (in-memory) ===============
-system_settings = {
-    "threshold": 2500,
-    "alert_email": ""
-}
-
-# ================= Flask Routes =================
-@app.route("/")
-def index():
-    return redirect(url_for("login"))
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-        if email in users and users[email] == password:
-            session["email"] = email
-            return redirect(url_for("dashboard"))
-        else:
-            return render_template("login.html", error="Sai tài khoản hoặc mật khẩu")
-    return render_template("login.html")
-
-
-@app.route("/dashboard")
-def dashboard():
-    if "email" not in session:
-        return redirect(url_for("login"))
-    return render_template("dashboard.html")
-
-
-@app.route("/logout")
-def logout():
-    session.pop("email", None)
-    return redirect(url_for("login"))
-
-
-@app.route("/setting", methods=["GET", "POST"])
-def setting():
-    if "email" not in session:
-        return redirect(url_for("login"))
-    if request.method == "POST":
-        try:
-            system_settings["threshold"] = int(request.form.get("threshold", 2500))
-            system_settings["alert_email"] = request.form.get("alert_email", "")
-            return render_template("setting.html", success="Đã lưu cấu hình thành công")
-        except Exception as e:
-            return render_template("setting.html", success="Lỗi: không thể lưu cấu hình")
-    return render_template("setting.html")
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        # Bạn có thể mở rộng thêm kiểm tra email đã tồn tại hay chưa
-        email = request.form.get["email"]
-        password = request.form.get["password"]
-        confirm = request.form.get["confirm"]
-        if password != confirm:
-            return render_template("register.html", error="Mật khẩu không khớp")
-        users[email] = password
-        return redirect(url_for("login"))
-    return render_template("register.html")
-
-
-# ================= MQTT CALLBACK =================
+# ===== Định nghĩa hàm callback =====
 def on_connect(client, userdata, flags, rc):
-    print("MQTT connected")
-    for topic in mqtt_topics:
-        client.subscribe(topic)
-
+    print("MQTT connected, code =", rc)
+    client.subscribe("datasensor1")
+    client.subscribe("datasensor2")
+    client.subscribe("datasensor3")
 
 def on_message(client, userdata, msg):
-    try:
-        data = msg.payload.decode().split(",")
-        address = data[0]
-        temp = float(data[1])
-        hum = float(data[2])
-        gas = float(data[3])
-        fire = int(data[4])
+    # msg.topic ví dụ "datasensor1"
+    sid = int(msg.topic[-1])              # 1, 2 hoặc 3
+    parts = msg.payload.decode().split(",")
+    addr  = parts[0]
+    temp  = float(parts[1])
+    hum   = float(parts[2])
+    mq2   = float(parts[3])
+    fire  = bool(int(parts[4]))
 
-        print(f"Data from {msg.topic}: Addr={address}, Temp={temp}, Hum={hum}, Gas={gas}, Fire={fire}")
+    # 1) Lưu lên Firebase
+    send_data_firebase(sid, addr, temp, hum, mq2, fire)
 
-        node = msg.topic.replace("datasensor", "")
-        socketio.emit(f"update_data_sensor{node}", {
-            "address": address,
-            "temperature": temp,
-            "humidity": hum,
-            "mq2": gas,
-            "fire": fire
-        })
+    # 2) Emit realtime qua SocketIO
+    socketio.emit(f"update_data_sensor{sid}", {
+        "send_address": addr,
+        "temperature": temp,
+        "humidity": hum,
+        "mq2": mq2,
+        "fire": fire
+    })
 
-        if fire == 1 or gas >= system_settings["threshold"]:
-            send_sms(f"CẢNH BÁO: Cháy/gas tại {address} (Node {node})! MQ2={gas}ppm")
+    # 3) Ghi alert nếu có cháy
+    check_and_alert(sid, fire, addr)
 
-    except Exception as e:
-        print("MQTT error:", e)
-
-
-# ================= GỬI SMS =================
-def send_sms(content):
-    try:
-        if sim_serial and sim_serial.is_open:
-            sim_serial.write(b'AT\r')
-            time.sleep(0.5)
-            sim_serial.write(b'AT+CMGF=1\r')
-            time.sleep(0.5)
-            sim_serial.write(f'AT+CMGS="{phone_number}"\r'.encode())
-            time.sleep(0.5)
-            sim_serial.write(content.encode() + b"\x1A")  # Ctrl+Z
-            time.sleep(2)
-            print("Đã gửi SMS:", content)
-        else:
-            print("SIM module not available.")
-    except Exception as e:
-        print("Lỗi gửi SMS:", e)
-
-
-# ================= START MQTT =================
-mqtt_client = mqtt.Client()
+# ===== Gán callback cho client =====
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
-mqtt_client.connect(mqtt_broker, mqtt_port, 60)
-mqtt_client.loop_start()
 
-# ================= MAIN =================
+# 4. Web API Key Firebase
+FIREBASE_API_KEY = "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U"
+
+# 5. Routes + Xác thực Firebase
+@app.route("/", methods=["GET"])
+def FUN_root():
+    if "username" not in session:
+        return redirect(url_for("FUN_login"))
+    return render_template("base.html")
+
+@app.route("/register", methods=["GET","POST"])
+def FUN_register():
+    error = None
+    if request.method == "POST":
+        email = request.form["username"]
+        pwd   = request.form["password"]
+        conf  = request.form["confirm"]
+        if pwd != conf:
+            error = "Mật khẩu không khớp"
+        else:
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+            data = {"email": email, "password": pwd, "returnSecureToken": True}
+            r = requests.post(url, json=data)
+            if r.status_code == 200:
+                return redirect(url_for("FUN_login"))
+            error = r.json().get("error", {}).get("message", "Lỗi đăng ký")
+    return render_template("register.html", error=error)
+
+@app.route("/login", methods=["GET","POST"])
+def FUN_login():
+    error = None
+    if request.method == "POST":
+        email    = request.form["username"]
+        password = request.form["password"]
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        data = {"email": email, "password": password, "returnSecureToken": True}
+        r = requests.post(url, json=data)
+        if r.status_code == 200:
+            session["username"] = email
+            return redirect(url_for("FUN_dashboard"))
+        error = r.json().get("error", {}).get("message", "Sai user hoặc mật khẩu")
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def FUN_logout():
+    session.pop("username", None)
+    return redirect(url_for("FUN_login"))
+
+@app.route("/dashboard")
+def FUN_dashboard():
+    if "username" not in session:
+        return redirect(url_for("FUN_login"))
+    return render_template("viewdata.html")
+
+@app.route("/userhome")
+def FUN_userhome():
+    if "username" not in session:
+        return redirect(url_for("FUN_login"))
+    return render_template("userhome.html")
+
+@app.route("/setting", methods=["GET","POST"])
+def FUN_setting():
+    if "username" not in session:
+        return redirect(url_for("FUN_login"))
+    msg = None
+    if request.method == "POST":
+        msg = "Đã lưu cài đặt"
+    return render_template("setting.html", msg=msg)
+
+# 6. Thread nền (nếu cần)
+def background_task():
+    while True:
+        time.sleep(1)
+thread = Thread(target=background_task, daemon=True)
+thread.start()
+
+# 7. Chạy ứng dụng
 if __name__ == "__main__":
     mqtt_client.connect("broker.hivemq.com", 1883, 60)
     port = int(os.environ.get("PORT", 5000))
     serve(app, host="0.0.0.0", port=port)
+
