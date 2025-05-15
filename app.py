@@ -6,7 +6,7 @@ import time
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
-socketio = SocketIO(app, async_mode="eventlet")
+
 
 # ================= MQTT Config =================
 mqtt_broker = "localhost"
@@ -152,4 +152,6 @@ mqtt_client.loop_start()
 
 # ================= MAIN =================
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    mqtt_client.connect("broker.hivemq.com", 1883, 60)
+    port = int(os.environ.get("PORT", 5000))
+    serve(app, host="0.0.0.0", port=port)
