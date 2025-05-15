@@ -1,33 +1,31 @@
-// dashboard.js
+function fetchRealtimeData() {
+  fetch('/api/realtime')
+    .then(response => response.json())
+    .then(data => {
+      const tableBody = document.getElementById("sensor-data");
+      tableBody.innerHTML = '';
 
-const tableBody = document.getElementById("sensor-data");
-const socket = io();
+      Object.keys(data).forEach(sensor => {
+        const d = data[sensor];
+        const fireText = d.fire ? 'Có' : 'Không';
+        const fireClass = d.fire ? 'table-danger fw-bold' : '';
 
-[1, 2, 3].forEach(n => {
-  socket.on(`update_data_sensor${n}`, data => {
-    const rowId = `row${n}`;
-    let row = document.getElementById(rowId);
-
-    const fireStatus = data.fire === 1 ? '🔥 Có cháy' : '✔️ An toàn';
-    const html = `
-      <td>${data.address}</td>
-      <td>${data.temperature.toFixed(1)} °C</td>
-      <td>${data.humidity.toFixed(1)} %</td>
-      <td>${data.mq2.toFixed(0)} ppm</td>
-      <td>${fireStatus}</td>
-    `;
-
-    if (!row) {
-      row = document.createElement("tr");
-      row.id = rowId;
-      row.innerHTML = html;
-      tableBody.appendChild(row);
-    } else {
-      row.innerHTML = html;
-    }
-  });
-});
-
-function logout() {
-  window.location.href = "/logout";
+        const row = `
+          <tr class="${fireClass}">
+            <td>${d.address || sensor}</td>
+            <td>${d.temperature ?? 'N/A'}</td>
+            <td>${d.humidity ?? 'N/A'}</td>
+            <td>${d.mq2 ?? 'N/A'}</td>
+            <td>${fireText}</td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
+      });
+    })
+    .catch(error => {
+      console.error("Lỗi khi tải dữ liệu:", error);
+    });
 }
+
+setInterval(fetchRealtimeData, 3000);
+window.onload = fetchRealtimeData;
