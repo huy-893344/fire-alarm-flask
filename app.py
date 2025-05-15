@@ -85,7 +85,7 @@ def FUN_userhome():
 @app.route("/setting", methods=["GET","POST"])
 def FUN_setting():
     if "username" not in session:
-return redirect(url_for("FUN_login"))
+        return redirect(url_for("FUN_login"))
     msg = None
     if request.method == "POST":
         msg = "Đã lưu cài đặt"
