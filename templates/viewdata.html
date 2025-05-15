@@ -33,6 +33,34 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
-  <script defer src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script>
+    function fetchRealtimeData() {
+      fetch('/api/realtime')
+        .then(response => response.json())
+        .then(data => {
+          const tableBody = document.getElementById("sensor-data");
+          tableBody.innerHTML = '';
+
+          Object.keys(data).forEach(sensor => {
+            const d = data[sensor];
+            const row = `
+              <tr>
+                <td>${d.address || sensor}</td>
+                <td>${d.temperature ?? 'N/A'}</td>
+                <td>${d.humidity ?? 'N/A'}</td>
+                <td>${d.mq2 ?? 'N/A'}</td>
+                <td>${d.fire ? 'Có' : 'Không'}</td>
+              </tr>
+            `;
+            tableBody.innerHTML += row;
+          });
+        })
+        .catch(error => {
+          console.error("Lỗi lấy dữ liệu:", error);
+        });
+    }
+
+    setInterval(fetchRealtimeData, 3000);
+    window.onload = fetchRealtimeData;
+  </script>
 {% endblock %}
