@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Trang người dùng | Fire Alarm{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+  <div class="text-center mb-4">
+    <h2>Xin chào, {{ session['username'] }}!</h2>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger mt-3">Đăng xuất</a>
+  </div>
+
+  <ul class="list-group w-50 mx-auto">
+    <li class="list-group-item">
+      <a href="{{ url_for('dashboard') }}">📊 Xem dữ liệu</a>
+    </li>
+    <li class="list-group-item">
+      <a href="{{ url_for('setting') }}">⚙️ Cài đặt</a>
+    </li>
+  </ul>
+</div>
+{% endblock %}

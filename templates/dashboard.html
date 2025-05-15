@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Fire Alarm{% endblock %}
+
+{% block body %}
+<div class="container py-4 text-center">
+  <div class="text-center mb-4">
+    <img src="{{ url_for('static', filename='img/node.png') }}" alt="Logo Cảm Biến" width="150">
+  </div>
+  <h2 class="text-center mb-4">Giám sát cảm biến</h2>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Địa chỉ thiết bị</th>
+          <th>Nhiệt độ (℃)</th>
+          <th>Độ ẩm (%)</th>
+          <th>Nồng độ gas</th>
+          <th>Dấu báo lửa</th>
+        </tr>
+      </thead>
+      <tbody id="sensor-data">
+        <tr>
+          <td colspan="5">Đang chờ dữ liệu...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+<script>
+const socket = io();
+socket.on("update_data_sensor", function(data) {
+  const tbody = document.getElementById("sensor-data");
+  tbody.innerHTML = `
+    <tr>
+      <td>${data.address}</td>
+      <td>${data.temperature}℃</td>
+      <td>${data.humidity}%</td>
+      <td>${data.gas}</td>
+      <td style="color: ${data.fire == 1 ? 'red' : 'green'};">
+        ${data.fire == 1 ? "🚨 Có cháy" : "An toàn"}
+      </td>
+    </tr>
+  `;
+});
+</script>
+{% endblock %}

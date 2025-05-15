@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Trang chủ | Tủ trung tâm báo cháy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="home-box">
+    <h1>Chào mừng đến với hệ thống báo cháy</h1>
+    <p><a href="{{ url_for('login') }}">Đăng nhập</a> hoặc <a href="{{ url_for('register') }}">Đăng ký</a>
+ để tiếp tục</p>
+  </div>
+</body>
+</html>
