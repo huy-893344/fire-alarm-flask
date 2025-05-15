@@ -29,7 +29,7 @@ FIREBASE_API_KEY = "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U"
 @app.route("/", methods=["GET"])
 def FUN_root():
     if "username" not in session:
-        return redirect(url_for("FUN_login"))
+        return redirect(url_for("login"))
     return render_template("base.html")
 
 @app.route("/register", methods=["GET","POST"])
@@ -46,7 +46,7 @@ def FUN_register():
             data = {"email": email, "password": pwd, "returnSecureToken": True}
             r = requests.post(url, json=data)
             if r.status_code == 200:
-                return redirect(url_for("FUN_login"))
+                return redirect(url_for("login"))
             error = r.json().get("error", {}).get("message", "Lỗi đăng ký")
     return render_template("register.html", error=error)
 
@@ -61,31 +61,31 @@ def FUN_login():
         r = requests.post(url, json=data)
         if r.status_code == 200:
             session["username"] = email
-            return redirect(url_for("FUN_dashboard"))
+            return redirect(url_for("dashboard"))
         error = r.json().get("error", {}).get("message", "Sai user hoặc mật khẩu")
     return render_template("login.html", error=error)
 
 @app.route("/logout")
 def FUN_logout():
     session.pop("username", None)
-    return redirect(url_for("FUN_login"))
+    return redirect(url_for("login"))
 
 @app.route("/dashboard")
 def FUN_dashboard():
     if "username" not in session:
-        return redirect(url_for("FUN_login"))
+        return redirect(url_for("login"))
     return render_template("viewdata.html")
 
 @app.route("/userhome")
 def FUN_userhome():
     if "username" not in session:
-        return redirect(url_for("FUN_login"))
+        return redirect(url_for("login"))
     return render_template("userhome.html")
 
 @app.route("/setting", methods=["GET","POST"])
 def FUN_setting():
     if "username" not in session:
-        return redirect(url_for("FUN_login"))
+        return redirect(url_for("login"))
     msg = None
     if request.method == "POST":
         msg = "Đã lưu cài đặt"
