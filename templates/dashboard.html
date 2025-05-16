@@ -1,51 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | Fire Alarm{% endblock %}
+{% block title %}Dashboard | Tủ trung tâm báo cháy{% endblock %}
 
 {% block body %}
-<div class="container py-4 text-center">
-  <div class="text-center mb-4">
-    <img src="{{ url_for('static', filename='img/node.png') }}" alt="Logo Cảm Biến" width="150">
+<div class="container mx-auto py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Dashboard</h1>
+    <div>
+      <a href="{{ url_for('setting') }}" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Cấu hình</a>
+      <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Đăng xuất</a>
+    </div>
   </div>
-  <h2 class="text-center mb-4">Giám sát cảm biến</h2>
 
-  <div class="table-responsive">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Địa chỉ thiết bị</th>
-          <th>Nhiệt độ (℃)</th>
-          <th>Độ ẩm (%)</th>
-          <th>Nồng độ gas</th>
-          <th>Dấu báo lửa</th>
-        </tr>
-      </thead>
-      <tbody id="sensor-data">
-        <tr>
-          <td colspan="5">Đang chờ dữ liệu...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <div id="nodes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 <script>
-const socket = io();
-socket.on("update_data_sensor", function(data) {
-  const tbody = document.getElementById("sensor-data");
-  tbody.innerHTML = `
-    <tr>
-      <td>${data.address}</td>
-      <td>${data.temperature}℃</td>
-      <td>${data.humidity}%</td>
-      <td>${data.gas}</td>
-      <td style="color: ${data.fire == 1 ? 'red' : 'green'};">
-        ${data.fire == 1 ? "🚨 Có cháy" : "An toàn"}
-      </td>
-    </tr>
-  `;
-});
+  // TODO: Thay đổi firebaseConfig bằng cấu hình dự án của bạn
+  const firebaseConfig = {
+    apiKey: "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U",
+    authDomain: "tutrungtambaochay.firebaseapp.com",
+    databaseURL: "https://tutrungtambaochay-default-rtdb.firebaseio.com",
+    projectId: "tutrungtambaochay",
+    storageBucket: "tutrungtambaochay.firebasestorage.app",
+    messagingSenderId: "553147068654",
+    appId: "1:553147068654:web:8274efbef19bacf47883ff",
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const dbRef = firebase.database().ref('DataSensorRealTime');
+  dbRef.on('value', snapshot => {
+    const data = snapshot.val() || {};
+    const container = document.getElementById('nodes');
+    container.innerHTML = '';
+    Object.entries(data).forEach(([sid, item]) => {
+      const card = document.createElement('div');
+      card.className = 'bg-white p-4 rounded shadow';
+      card.innerHTML = `
+        <h2 class="text-xl font-semibold mb-2">Node ${sid}</h2>
+        <p><strong>Địa chỉ:</strong> ${item.send_address}</p>
+        <p><strong>Nhiệt độ:</strong> ${item.temperature}&deg;C</p>
+        <p><strong>Độ ẩm:</strong> ${item.humidity}%</p>
+        <p><strong>MQ2:</strong> ${item.mq2} ppm</p>
+        <p><strong>Báo cháy:</strong> ${item.fire ? '<span class="text-red-600">Có</span>' : 'Không'}</p>
+        <p class="text-xs text-gray-500 mt-2">Cập nhật: ${new Date(item.timestamp).toLocaleString()}</p>
+      `;
+      container.appendChild(card);
+    });
+  });
 </script>
 {% endblock %}
