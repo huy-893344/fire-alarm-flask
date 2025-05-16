@@ -24,7 +24,8 @@
         <li><a href="{{ url_for('login') }}" class="hover:text-gray-300">Đăng nhập</a></li>
         <li><a href="{{ url_for('register') }}" class="hover:text-gray-300">Đăng ký</a></li>
       {% endif %}
-      <li><a href="{{ url_for('contact') }}" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Liên hệ</a></li>
+      <!-- Liên hệ: link tĩnh để tránh lỗi nếu chưa có route -->
+      <li><a href="/contact" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Liên hệ</a></li>
     </ul>
   </nav>
 
