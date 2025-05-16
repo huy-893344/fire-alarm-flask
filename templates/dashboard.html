@@ -1,54 +1,73 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | Tủ trung tâm báo cháy{% endblock %}
+{% block title %}Dashboard | Fire Alarm{% endblock %}
 
 {% block body %}
 <div class="container mx-auto py-8">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">Dashboard</h1>
-    <div>
-      <a href="{{ url_for('setting') }}" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Cấu hình</a>
-      <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Đăng xuất</a>
-    </div>
+  <!-- Icon and Title -->
+  <div class="flex flex-col items-center mb-8">
+    <img src="{{ url_for('static', filename='img/fire_sensor.png') }}" alt="Sensor Icon" class="w-32 h-32 mb-4" />
+    <h1 class="text-4xl font-bold text-white">Giám sát cảm biến</h1>
   </div>
-
-  <div id="nodes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  
+  <!-- Sensor Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white rounded-lg overflow-hidden">
+      <thead class="bg-orange-600 text-white">
+        <tr>
+          <th class="px-4 py-3">Địa chỉ thiết bị</th>
+          <th class="px-4 py-3">Nhiệt độ (°C)</th>
+          <th class="px-4 py-3">Độ ẩm (%)</th>
+          <th class="px-4 py-3">Nồng độ gas</th>
+          <th class="px-4 py-3">Dấu báo lửa</th>
+        </tr>
+      </thead>
+      <tbody id="sensor-data" class="text-gray-800">
+        <tr>
+          <td colspan="5" class="text-center py-6">Đang chờ dữ liệu...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 <script>
-  // TODO: Thay đổi firebaseConfig bằng cấu hình dự án của bạn
   const firebaseConfig = {
-    apiKey: "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U",
-    authDomain: "tutrungtambaochay.firebaseapp.com",
-    databaseURL: "https://tutrungtambaochay-default-rtdb.firebaseio.com",
-    projectId: "tutrungtambaochay",
-    storageBucket: "tutrungtambaochay.firebasestorage.app",
-    messagingSenderId: "553147068654",
-    appId: "1:553147068654:web:8274efbef19bacf47883ff",
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "https://firedetection-23fe9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
   firebase.initializeApp(firebaseConfig);
 
   const dbRef = firebase.database().ref('DataSensorRealTime');
   dbRef.on('value', snapshot => {
     const data = snapshot.val() || {};
-    const container = document.getElementById('nodes');
-    container.innerHTML = '';
+    const tbody = document.getElementById('sensor-data');
+    tbody.innerHTML = '';
+
     Object.entries(data).forEach(([sid, item]) => {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-4 rounded shadow';
-      card.innerHTML = `
-        <h2 class="text-xl font-semibold mb-2">Node ${sid}</h2>
-        <p><strong>Địa chỉ:</strong> ${item.send_address}</p>
-        <p><strong>Nhiệt độ:</strong> ${item.temperature}&deg;C</p>
-        <p><strong>Độ ẩm:</strong> ${item.humidity}%</p>
-        <p><strong>MQ2:</strong> ${item.mq2} ppm</p>
-        <p><strong>Báo cháy:</strong> ${item.fire ? '<span class="text-red-600">Có</span>' : 'Không'}</p>
-        <p class="text-xs text-gray-500 mt-2">Cập nhật: ${new Date(item.timestamp).toLocaleString()}</p>
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="border px-4 py-2">${item.send_address || sid}</td>
+        <td class="border px-4 py-2">${item.temperature ?? '—'}</td>
+        <td class="border px-4 py-2">${item.humidity ?? '—'}</td>
+        <td class="border px-4 py-2">${item.mq2 ?? '—'}</td>
+        <td class="border px-4 py-2">${item.fire ? '<span class="text-red-600">Có</span>' : 'Không'}</td>
       `;
-      container.appendChild(card);
+      tbody.appendChild(tr);
     });
+
+    if (!Object.keys(data).length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6">Chưa có dữ liệu</td></tr>';
+    }
   });
 </script>
 {% endblock %}
