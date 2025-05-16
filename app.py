@@ -43,7 +43,7 @@ except serial.SerialException:
 phone_number = "+849xxxxxxxx"
 
 # MQTT config
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
 
