@@ -6,3 +6,4 @@ pyserial
 firebase-admin
 waitress
 flask-cors
+json
