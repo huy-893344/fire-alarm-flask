@@ -8,10 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1) Firebase configuration – using your project credentials
   const firebaseConfig = {
     apiKey: "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U",
-    authDomain: "tutrungtambaochay.firebaseapp.com",
-    databaseURL: "https://tutrungtambaochay-default-rtdb.firebaseio.com",
-    projectId: "tutrungtambaochay",
-    storageBucket: "tutrungtambaochay.firebasestorage.app",
+    authDomain: "tutrungtambaocahay.firebaseapp.com",
+    databaseURL: "https://tutrungtambaocahay-default-rtdb.firebaseio.com",
+    projectId: "tutrungtambaocahay",
+    storageBucket: "tutrungtambaocahay.appspot.com",
     messagingSenderId: "553147068654",
     appId: "1:553147068654:web:8274efbef19bacf47883ff",
     measurementId: "G-DYC8NP2V13"
@@ -21,9 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   firebase.initializeApp(firebaseConfig);
 
   // 3) Reference the DataSensorRealTime node in your database
-  // If your data is stored at the database root (null at / means no DataSensorRealTime node)
-  // switch to ref('/') to read top-level keys like esp32_temp, esp32_humi etc
-  const dbRef = firebase.database().ref();
+  const dbRef = firebase.database().ref('DataSensorRealTime');
   const tbody = document.getElementById('sensor-data');
 
   // 4) Listen for real-time updates
@@ -37,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Populate table rows
+    // Populate table rows (each child is a sensor node)
     Object.entries(data).forEach(([sid, item]) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
