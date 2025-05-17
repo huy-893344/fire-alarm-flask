@@ -8,13 +8,14 @@ from firebase_admin import credentials, db
 import paho.mqtt.client as mqtt
 import serial
 import time
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_cors import CORS
 
 # ========== CONFIGURATION ==========
 # Load Firebase credentials and initialize Admin SDK with correct project URL
 cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
+    # --> Use the exact URL shown in your Realtime Database console (no region suffix)
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
@@ -30,11 +31,11 @@ def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
         f"{sid}_fire":      fire,
         f"{sid}_updated":   timestamp
     }
-    # Use update to write multiple keys at root without overwriting all data
+    # Update multiple keys at root without overwriting all data
     root_ref.update(payload)
     print(f"[{sid}] Updated keys {list(payload.keys())} @ {timestamp}")
 
-# Serial SIM module configuration (if any)
+# Serial SIM module configuration
 try:
     sim_serial = serial.Serial("COM7", 9600, timeout=1)
 except serial.SerialException:
@@ -43,13 +44,14 @@ except serial.SerialException:
 phone_number = "+849xxxxxxxx"
 
 # MQTT settings
+default_threshold = 2500
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT   = 1883
 MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
 
 # In-memory stores
 users = {"anh066214@gmail.com": "123456"}
-t_system_settings = {"threshold": 2500, "alert_email": ""}
+t_system_settings = {"threshold": default_threshold, "alert_email": ""}
 
 # Function to send SMS via SIM module
 def send_sms(content):
@@ -66,12 +68,10 @@ def send_sms(content):
         print("SIM module not available.")
 
 # MQTT callbacks
-
-def on_connect(client, userdata, flags, rc):
+ def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker, rc=", rc)
     for topic, qos in MQTT_TOPICS:
         client.subscribe(topic, qos)
-
 
 def on_message(client, userdata, msg):
     try:
@@ -86,7 +86,8 @@ def on_message(client, userdata, msg):
         return
 
     send_realtime_firebase(sid, addr, temp, hum, gas, fire)
-    if fire == 1 or gas >= t_system_settings.get("threshold", 2500):
+    threshold = t_system_settings.get("threshold", default_threshold)
+    if fire == 1 or gas >= threshold:
         send_sms(f"ALERT: Node {sid} at {addr} - gas={gas}, fire={fire}")
 
 # Flask app setup
@@ -98,56 +99,71 @@ CORS(app)
 def index():
     return redirect(url_for('login'))
 
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET","POST"] )
 def login():
-    error=None
-    if request.method=="POST":
-        e=request.form['email']; p=request.form['password']
-        if e in users and users[e]==p:
-            session['email']=e
+    error = None
+    if request.method == "POST":
+        e = request.form['email']; p = request.form['password']
+        if e in users and users[e] == p:
+            session['email'] = e
             return redirect(url_for('dashboard'))
-        error="Sai tài khoản hoặc mật khẩu"
+        error = "Sai tài khoản hoặc mật khẩu"
     return render_template('login.html', error=error)
 
 @app.route("/register", methods=["GET","POST"])
 def register():
-    error=None
-    if request.method=="POST":
-        e=request.form['email']; p=request.form['password']; c=request.form['confirm']
-        if p!=c: error="Mật khẩu không khớp"
-        elif e in users: error="Email đã tồn tại"
+    error = None
+    if request.method == "POST":
+        e = request.form['email']; p = request.form['password']; c = request.form['confirm']
+        if p != c:
+            error = "Mật khẩu không khớp"
+        elif e in users:
+            error = "Email đã tồn tại"
         else:
-            users[e]=p
+            users[e] = p
             return redirect(url_for('login'))
     return render_template('register.html', error=error)
 
 @app.route("/dashboard")
 def dashboard():
-    if 'email' not in session: return redirect(url_for('login'))
-    return render_template('dashboard.html')
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    # Fetch latest sensor data from Realtime Database root
+    sensor_data = db.reference('/').get() or {}
+    return render_template('dashboard.html', sensor_data=sensor_data)
+
+@app.route("/api/data")
+def api_data():
+    if 'email' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = db.reference('/').get() or {}
+    return jsonify(data)
 
 @app.route("/setting", methods=["GET","POST"])
 def setting():
-    if 'email' not in session: return redirect(url_for('login'))
-    message=None
-    if request.method=='POST':
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    message = None
+    if request.method == 'POST':
         try:
-            t_system_settings['threshold']=int(request.form['threshold'])
-            t_system_settings['alert_email']=request.form['alert_email']
-            message="Lưu cấu hình thành công"
+            t_system_settings['threshold'] = int(request.form['threshold'])
+            t_system_settings['alert_email'] = request.form['alert_email']
+            message = "Lưu cấu hình thành công"
         except:
-            message="Lỗi lưu cấu hình"
-    return render_template('setting.html',message=message,settings=t_system_settings)
+            message = "Lỗi lưu cấu hình"
+    return render_template('setting.html', message=message, settings=t_system_settings)
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-if __name__=="__main__":
-    client=mqtt.Client()
-    client.on_connect=on_connect
-    client.on_message=on_message
+if __name__ == "__main__":
+    # Start MQTT client in background thread
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
+    # Run Flask server
     app.run(host="0.0.0.0", port=5000, debug=True)
