@@ -17,22 +17,7 @@ from flask_cors import CORS
 from flask import jsonify
 # ========== FIREBASE CONFIGURATION (Embed service account info directly) ==========
 # Paste your entire JSON service account key below, preserving line breaks
-service_account_info = {
-    "type": "service_account",
-    "project_id": "pham-quoc-anh",
-    "private_key_id": "6cc08ab4d0fadeb56cd6692238ee771af648e68d",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCRCk/QwrWiL1VO\ni+xgzPUpQcG33sUtKQHhP0P4DpxtZHaA7DKSo56RpXB9r/VKwNqFWqUU6iH/1T3h\n8tETwkv6WbxpRZ9C6z85BVxt5V+7rLqizFMj8vD9JRXADZCg6S1ZQA9NFf6qfR2t\n10zubIgHiC9tRLGuNXaXS1izkQWFK6BHDltYuxEo2COZWoJtrWjIRO1iHpBUwkRB\nBHja5s6sRef7oQeKxRmjU6nCXG6X75vb0bToBFpWI0lyehwavjmVJTzg3c81UG3W\n00NTKDovu6+YXdRsAAQ+0WetEUYGmh8bO9zz3EjfrNIr6BXpaK7rWCYVsT+78ubt\nzD/PxeKjAgMBAAECggEAGUqXCGwriBCA66Vynp6e0Ybp5Movz+Qqs8B4dbT2igzO\nrUSCvRdS+0rCBui7+UEP2dkomDELpLTmiZPx6WQkI4+qTyEY2G51I9hPecpZmzxP\nfzvp84bVhw8Eb+ztn2GJytpk0KhZNBmFJ183xwud3NJekss7wIkKGO/Gk+lh8Qqb\nPX7qP2LfY1mYuiYiB4xood2/BgQ1OSm8m+Z3o6ROoe1iBK9yCjYBtBjNy62IF6WK\nEI6XQ0exNyl9HWHKFhlWDptdjd7u+hNDn0k8lZz9A8G2ehYkomC3eT/32F84azEE\nTaRjqUTeyRCgsOMN6RFdlFUw1XJT1mvd74lOF2HzYQKBgQDEUDDzg6fpXFAnySCf\nbn51QIb9BxhMRrU4GQrUl8Wd1TnlsZC1pqmeX1GaFTuanfR8JiPihZ24bbMhh5bX\nyIfXt2OG3RoDpKr00w+WTYUQVg1FBmtX/W2Vf92P3uTvIG9SkWYeVWkwSDtYdD4N\n9bWVIXOai4+meABjdLfsLdVxhQKBgQC9I1maaEUXtb/lJi6uoVAZ1HrOIcjQbzSc\n65o5IztN6VNsyF+PDcW7YBZy2471A58mvdF9CfwU5WurZIFuQi+okMErdV9UXlP7\n9ZZtsons/f/oBVgJXjvVTIpDrnlhr+yf8geJFoH4HIThWxvEHl4YrONxlbWBxbOD\nfIBabVcoBwKBgHjMO4LspXsEMdJ5gZh5PllaDnZOUlZFQCe3ySFODuzzEwBTBg+w\n8TihwK3GmPmobpOiSHyP6aBd6FcefuRi4awMjbKkBOju/79MzI+ZPeLygJHTxGPN\nbwwKNUTdTBQU6kttauAJgIOUPuhMBw9B/a05e1BCxm8R8nNAlBhBj9CdAoGAfza3\nndNkJX5pg4ca/vohFj6EGwE+QHOLv7/4C1ZXHSBCrHhZTa7FwDHw53Alx0aYVUZ3\nENMWajelI7KGG9MImyhBxSk85VJMyrt0YnQjsPNmnHh7rlFjjSPeG4fOvJXHYg04\nZExvPqJv/eN52X9TauVeVZeMbay8AURMUIYaiSECgYEAryYyyPK3kSfxB4SPpBsy\nX0oXpfnubY1Rn8j+VjB2Gcw7NbxKTsLL5wjSCorMr1/on7n911Sq9B8r4+VBmfak\nK+poLEWxgohgNYU5W4N2rdy4fWqwpGzplHD7AjidONDlUrzYAMnyy94Skg5C6KDu\n8j0j6c9UjNvZtPBqBdpnHfE=\n-----END PRIVATE KEY-----\n",
-    "client_email": "firebase-adminsdk-fbsvc@pham-quoc-anh.iam.gserviceaccount.com",
-    "client_id": "102006103166067369217",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40pham-quoc-anh.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com"
-}
-
-# Initialize Firebase Admin SDK with embedded credentials
-cred = credentials.Certificate(service_account_info)
+cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
