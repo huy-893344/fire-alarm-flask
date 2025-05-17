@@ -1,27 +1,71 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Đăng ký | Tủ trung tâm báo cháy</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-  <div class="login-box">
-    <h2>Đăng ký tài khoản</h2>
-    <form action="{{ url_for('register') }}" method="POST">
-      <label>User name:</label>
-      <input type="text" name="username" required>
-      <label>Email:</label>
-      <input type="email" name="email" required>
-      <label>Password:</label>
-      <input type="password" name="password" required>
-      <label>Confirm Password:</label>
-      <input type="password" name="confirm" required>
-      <button type="submit">Register</button>
+{% extends "base.html" %}
+{% block title %}Đăng ký | Fire Alarm{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-sm">
+    <h2 class="text-2xl font-bold mb-6 text-center">Đăng ký tài khoản</h2>
+
+    {% if error %}
+      <div class="alert alert-danger mb-4">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="mb-4">
+        <label for="username" class="form-label">Tên đăng nhập</label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          class="form-control"
+          placeholder="Nhập tên đăng nhập"
+          required
+        >
+      </div>
+
+      <div class="mb-4">
+        <label for="email" class="form-label">Email</label>
+        <input
+          id="email"
+          type="email"
+          name="email"
+          class="form-control"
+          placeholder="you@example.com"
+          required
+        >
+      </div>
+
+      <div class="mb-4">
+        <label for="password" class="form-label">Mật khẩu</label>
+        <input
+          id="password"
+          type="password"
+          name="password"
+          class="form-control"
+          placeholder="••••••••"
+          required
+        >
+      </div>
+
+      <div class="mb-4">
+        <label for="confirm" class="form-label">Xác nhận mật khẩu</label>
+        <input
+          id="confirm"
+          type="password"
+          name="confirm"
+          class="form-control"
+          placeholder="••••••••"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Đăng ký</button>
     </form>
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
-    <p>Đã có tài khoản? <a href="{{ url_for('login') }}">Đăng nhập</a></p>
+
+    <p class="mt-4 text-center">
+      Đã có tài khoản?
+      <a href="{{ url_for('login') }}" class="link-primary">Đăng nhập</a>
+    </p>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
