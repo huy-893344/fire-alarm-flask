@@ -1,31 +1,52 @@
-function fetchRealtimeData() {
-  fetch('/api/realtime')
-    .then(response => response.json())
-    .then(data => {
-      const tableBody = document.getElementById("sensor-data");
-      tableBody.innerHTML = '';
+// static/js/dashboard.js
+// This file initializes Firebase and listens for real-time updates
 
-      Object.keys(data).forEach(sensor => {
-        const d = data[sensor];
-        const fireText = d.fire ? 'Có' : 'Không';
-        const fireClass = d.fire ? 'table-danger fw-bold' : '';
+document.addEventListener('DOMContentLoaded', () => {
+  // Firebase Web SDK v9 compatibility
+  // Be sure to include <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  // and <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-        const row = `
-          <tr class="${fireClass}">
-            <td>${d.address || sensor}</td>
-            <td>${d.temperature ?? 'N/A'}</td>
-            <td>${d.humidity ?? 'N/A'}</td>
-            <td>${d.mq2 ?? 'N/A'}</td>
-            <td>${fireText}</td>
-          </tr>
-        `;
-        tableBody.innerHTML += row;
-      });
-    })
-    .catch(error => {
-      console.error("Lỗi khi tải dữ liệu:", error);
+  // 1) Firebase configuration – replace placeholders with your project's values
+  const firebaseConfig = {
+    apiKey: "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U",
+    authDomain: "tutrungtambaochay.firebaseapp.com",
+    databaseURL: "https://tutrungtambaochay-default-rtdb.firebaseio.com",
+    projectId: "tutrungtambaochay",
+    storageBucket: "tutrungtambaochay.firebasestorage.app",
+    messagingSenderId: "553147068654",
+    appId: "1:553147068654:web:8274efbef19bacf47883ff",
+ 
+  };
+
+  // 2) Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // 3) Reference the DataSensorRealTime node
+  const dbRef = firebase.database().ref('DataSensorRealTime');
+  const tbody = document.getElementById('sensor-data');
+
+  // 4) Listen for real-time value changes
+  dbRef.on('value', snapshot => {
+    const data = snapshot.val() || {};
+    tbody.innerHTML = '';
+
+    // If no data, show placeholder row
+    if (Object.keys(data).length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6">Chưa có dữ liệu</td></tr>';
+      return;
+    }
+
+    // Populate table rows
+    Object.entries(data).forEach(([sid, item]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-4 py-2">${item.send_address || sid}</td>
+        <td class="px-4 py-2">${item.temperature ?? '—'}</td>
+        <td class="px-4 py-2">${item.humidity ?? '—'}</td>
+        <td class="px-4 py-2">${item.mq2 ?? '—'}</td>
+        <td class="px-4 py-2">${item.fire ? '<span class="text-red-600 font-semibold">Có</span>' : 'Không'}</td>
+      `;
+      tbody.appendChild(tr);
     });
-}
-
-setInterval(fetchRealtimeData, 3000);
-window.onload = fetchRealtimeData;
+  });
+});
