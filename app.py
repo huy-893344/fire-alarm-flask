@@ -15,7 +15,7 @@ from flask_cors import CORS
 # Firebase Realtime Database setup (cần dùng đúng URL dự án của bạn)
 cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
+    "databaseURL": "https://tutrungtambaochay-default-rtdb.firebaseio.com"
 })
 
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
