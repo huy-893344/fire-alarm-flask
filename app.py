@@ -174,9 +174,11 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True)
+
