@@ -89,81 +89,86 @@ t_system_settings = {"threshold": 2500, "alert_email": ""}
 def index():
     return redirect(url_for("login"))
 
-# --------- LOGIN ---------
+# ---- LOGIN ----
 @app.route("/login", methods=["GET","POST"])
 def login():
     error = None
     if request.method == "POST":
-        email = request.form["email"]
-        pw    = request.form["password"]
+        email = request.form.get("email","").strip()
+        pw    = request.form.get("password","").strip()
         if email in users and users[email] == pw:
             session["email"] = email
             return redirect(url_for("dashboard"))
         error = "Sai tài khoản hoặc mật khẩu"
     return render_template("login.html", error=error)
 
-# --------- REGISTER ---------
+# ---- REGISTER ----
 @app.route("/register", methods=["GET","POST"])
 def register():
     error = None
     if request.method == "POST":
-        email   = request.form["email"]
-        pw      = request.form["password"]
-        confirm = request.form["confirm"]
+        email   = request.form.get("email","").strip()
+        pw      = request.form.get("password","")
+        confirm = request.form.get("confirm","")
         if pw != confirm:
             error = "Mật khẩu không khớp"
         elif email in users:
             error = "Email đã tồn tại"
         else:
             users[email] = pw
-            flash("Đăng ký thành công, mời bạn đăng nhập", "success")
+            flash("Đăng ký thành công! Mời bạn đăng nhập.", "success")
             return redirect(url_for("login"))
     return render_template("register.html", error=error)
 
-# --------- DASHBOARD ---------
+# ---- DASHBOARD ----
 @app.route("/dashboard")
 def dashboard():
     if "email" not in session:
         return redirect(url_for("login"))
     return render_template("dashboard.html")
 
-# --------- SETTING ---------
+# ---- SETTING ----
 t_system_settings = {"threshold":2500, "alert_email":""}
 
 @app.route("/setting", methods=["GET","POST"])
 def setting():
     if "email" not in session:
         return redirect(url_for("login"))
-    msg = None
-    if request.method=="POST":
+    message = None
+    if request.method == "POST":
         try:
-            t_system_settings["threshold"]  = int(request.form["threshold"])
-            t_system_settings["alert_email"] = request.form["alert_email"]
-            msg = "Lưu cấu hình thành công"
+            t_system_settings["threshold"]  = int(request.form.get("threshold", 2500))
+            t_system_settings["alert_email"] = request.form.get("alert_email","")
+            message = "Lưu cấu hình thành công"
         except:
-            msg = "Lỗi lưu cấu hình"
+            message = "Lỗi khi lưu cấu hình"
     return render_template("setting.html",
                            settings=t_system_settings,
-                           message=msg)
+                           message=message)
 
-# --------- CONTACT ---------
+# ---- CONTACT ----
 @app.route("/contact", methods=["GET","POST"])
 def contact():
-    msg = None
-    if request.method=="POST":
-        name    = request.form["name"]
-        email   = request.form["email"]
-        content = request.form["message"]
-        # Chỉ demo, không lưu thực
-        msg = f"Cảm ơn {name}, chúng tôi đã nhận phản hồi."
-    return render_template("contact.html", message=msg)
+    message = None
+    if request.method == "POST":
+        name    = request.form.get("name","").strip()
+        email   = request.form.get("email","").strip()
+        content = request.form.get("message","").strip()
+        message = f"Cảm ơn {name}, chúng tôi đã nhận phản hồi!"
+    return render_template("contact.html", message=message)
 
-# --------- LOGOUT ---------
+# ---- LOGOUT ----
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
+# ---- API for realtime data ----
+@app.route("/api/realtime")
+def api_data():
+    data = db.reference("/DataSensorRealTime").get() or {}
+    return jsonify(data)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
