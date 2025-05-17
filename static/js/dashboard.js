@@ -21,7 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
   firebase.initializeApp(firebaseConfig);
 
   // 3) Reference the DataSensorRealTime node in your database
-  const dbRef = firebase.database().ref('DataSensorRealTime');
+  // If your data is stored at the database root (null at / means no DataSensorRealTime node)
+  // switch to ref('/') to read top-level keys like esp32_temp, esp32_humi etc
+  const dbRef = firebase.database().ref();
   const tbody = document.getElementById('sensor-data');
 
   // 4) Listen for real-time updates
