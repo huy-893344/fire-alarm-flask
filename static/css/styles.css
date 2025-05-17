@@ -1,66 +1,8 @@
 /* styles.css */
-/* 1) Ảnh nền full màn hình */
-.login-page {
-  /* đường dẫn tới ảnh nền của bạn */
-  background: url('../img/login-bg.jpg') no-repeat center center fixed;
-  background-size: cover;
-  /* đặt container login ra giữa */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
 
-/* 2) Bọc login form trong lớp có nền trắng mờ */
-.login-container {
-  background: rgba(255, 255, 255, 0.85);
-  padding: 2rem;
-  border-radius: 0.5rem;
-  max-width: 400px;
-  width: 100%;
-}
-/* Container for a white, rounded, shadowed table */
-.table-container {
-  background-color: #ffffff;
-  border-radius: 0.5rem; /* Tailwind rounded-lg = 0.5rem */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  margin: 2rem 0;
-}
-.table-container table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.table-container thead {
-  background-color: #FF5722;
-}
-.table-container thead th {
-  color: #ffffff;
-  font-weight: 600;
-  text-transform: uppercase;
-  padding: 0.75rem;
-  text-align: left;
-}
-.table-container thead th + th {
-  border-left: 1px solid #ffffff;
-}
-.table-container tbody td {
-  padding: 0.75rem;
-  border-top: 1px solid #e2e8f0;
-  color: #333333;
-}
-.table-container tbody tr:nth-child(even) {
-  background-color: #f9fafb;
-}
-
-/* make table-responsive if needed */
-.table-responsive {
-  overflow-x: auto;
-  margin-top: 1rem;
-}
-
-/* General body setup */
-body {
+/* Ensure html and body take full height */
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
@@ -68,41 +10,52 @@ body {
   color: #fff;
 }
 
-/* Body background for login page */
-body.login-page {
-  background: url("../img/bg.jpg") no-repeat center center fixed;
+/* 1) Ảnh nền full màn hình cho trang login */
+.login-page {
+  background: url('../img/login-bg.jpg') no-repeat center center fixed;
   background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
 }
 
-/* Login container */
+/* 2) Bọc login form trong lớp có nền trắng mờ */
 .login-container {
   background: rgba(255, 255, 255, 0.95);
-  padding: 30px;
-  border-radius: 12px;
+  padding: 2rem;
+  border-radius: 0.5rem;
   max-width: 400px;
-  margin: 5% auto;
+  width: 100%;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
+
+/* Tiêu đề trong login form */
 .login-container h2 {
   color: #333;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
 }
+
+/* Input fields trong login form */
 .login-container input[type="text"],
 .login-container input[type="email"],
 .login-container input[type="password"] {
-  margin-bottom: 15px;
-  padding: 10px;
-  border-radius: 5px;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
   border: 1px solid #ccc;
   width: 100%;
+  box-sizing: border-box;
 }
+
+/* Nút submit trong login form */
 .login-container button {
   background-color: #6a00ff;
   border: none;
   color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   width: 100%;
   font-weight: bold;
@@ -117,13 +70,13 @@ body.login-page {
 }
 .navbar .nav-link,
 .navbar .navbar-brand {
-  color: white !important;
+  color: #fff !important;
 }
 .navbar .btn-contact {
   background-color: #ff5722;
-  color: white;
-  padding: 6px 16px;
-  border-radius: 20px;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 1.25rem;
 }
 .navbar .btn-contact:hover {
   background-color: #e64a19;
@@ -131,42 +84,82 @@ body.login-page {
 
 /* Sensor data layout */
 .container h2 {
-  margin: 20px 0;
+  margin: 1.5rem 0;
   text-align: center;
 }
 img.node-icon {
   display: block;
-  margin: 0 auto 20px;
+  margin: 0 auto 1rem;
   max-width: 160px;
 }
 
-/* Legacy table styles (optional) */
-.table {
-  border-collapse: collapse;
+/* Container for a white, rounded, shadowed table */
+.table-container {
+  background-color: #fff;
+  border-radius: 0.5rem; /* 8px */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  overflow: hidden;
+  margin: 2rem 0;
+}
+.table-container table {
   width: 100%;
+  border-collapse: collapse;
+}
+.table-container thead {
+  background-color: #ff5722;
+}
+.table-container thead th {
+  color: #fff;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.75rem;
+  text-align: left;
+}
+.table-container thead th + th {
+  border-left: 1px solid #fff;
+}
+.table-container tbody td {
+  padding: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  color: #333;
+}
+.table-container tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* Fallback legacy table styles */
+.table {
+  width: 100%;
+  border-collapse: collapse;
   background-color: #fff;
   color: #000;
 }
 .table th, .table td {
   border: 1px solid #ccc;
-  padding: 12px 15px;
+  padding: 0.75rem;
   text-align: center;
 }
 .table th {
   background-color: #ff5722;
-  color: white;
+  color: #fff;
   font-weight: bold;
 }
 .table tbody tr:hover {
   background-color: #f5f5f5;
 }
 
+/* Table responsiveness */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
 /* Footer */
 footer {
   text-align: center;
-  padding: 10px 0;
+  padding: 1rem 0;
   background-color: #2c2f33;
   color: #fff;
-  font-size: 14px;
+  font-size: 0.875rem;
   margin-top: auto;
 }
