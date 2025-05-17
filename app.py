@@ -3,6 +3,7 @@
 
 import os
 import datetime
+import json
 import firebase_admin
 from firebase_admin import credentials, db
 import paho.mqtt.client as mqtt
@@ -12,7 +13,19 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_cors import CORS
 
 # ========== CONFIGURATION ==========
-cred = credentials.Certificate("key.json")
+# Determine path or JSON from environment
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# If GOOGLE_APPLICATION_CREDENTIALS is set, use that file path; otherwise default to project root key.json
+key_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, 'key.json'))
+
+# Load service account, support JSON string in env var FIREBASE_CREDENTIALS
+if os.environ.get('FIREBASE_CREDENTIALS'):
+    # Expect full JSON string in env
+    cred_dict = json.loads(os.environ['FIREBASE_CREDENTIALS'])
+    cred = credentials.Certificate(cred_dict)
+else:
+    cred = credentials.Certificate(key_path)
+
 firebase_admin.initialize_app(cred, {
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
@@ -23,17 +36,18 @@ t_system_settings = {"threshold": 2500, "alert_email": ""}
 
 # Serial SIM module configuration
 try:
-    sim_serial = serial.Serial("COM7", 9600, timeout=1)
+    sim_serial = serial.Serial(os.environ.get('SIM_PORT', 'COM7'), int(os.environ.get('SIM_BAUD', 9600)), timeout=1)
 except serial.SerialException:
     sim_serial = None
 
-phone_number = "+849xxxxxxxx"
+phone_number = os.environ.get('ALERT_PHONE', "+849xxxxxxxx")
 
 # MQTT settings
 default_threshold = 2500
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT = 1883
-MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
+MQTT_BROKER = os.environ.get('MQTT_BROKER', "broker.hivemq.com")
+MQTT_PORT = int(os.environ.get('MQTT_PORT', 1883))
+# topic list comma-separated in env, default datasensor1,2,3
+MQTT_TOPICS = [(t.strip(), 0) for t in os.environ.get('MQTT_TOPICS', 'datasensor1,datasensor2,datasensor3').split(',')]
 
 
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
@@ -74,7 +88,6 @@ def send_sms(content):
     else:
         print("SIM module not available.")
 
-
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker, rc=", rc)
@@ -94,14 +107,10 @@ def on_message(client, userdata, msg):
         print("MQTT parse error:", e, msg.payload)
         return
 
-    # Push to Firebase
     send_realtime_firebase(sid, addr, temp, hum, gas, fire)
-
-    # Check alert conditions
     threshold = t_system_settings.get("threshold", default_threshold)
     if fire == 1 or gas >= threshold:
         send_sms(f"ALERT: Node {sid} at {addr} - gas={gas}, fire={fire}")
-
 
 # Flask app setup
 app = Flask(__name__)
@@ -181,4 +190,3 @@ if __name__ == "__main__":
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
     app.run(host="0.0.0.0", port=port, debug=True)
-
