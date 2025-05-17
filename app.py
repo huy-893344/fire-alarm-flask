@@ -12,27 +12,30 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_cors import CORS
 
 # ========== CONFIGURATION ==========
-# Firebase Realtime Database setup
+# Firebase Realtime Database setup (cần dùng đúng URL dự án của bạn)
 cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://firedetection-23fe9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
     """
-    Ghi đè node của thiết bị sid trong Realtime Database
+    Push dữ liệu trực tiếp lên root của database với key theo sid
+    Ví dụ: esp32_temp, esp32_humi, esp32_mq2, esp32_fire
     """
-    ref = db.reference(f'/DataSensorRealTime/{sid}')
-    data = {
-        "send_address": addr,
-        "temperature":    temp,
-        "humidity":       hum,
-        "mq2":            gas,
-        "fire":           fire,
-        "timestamp":      datetime.datetime.utcnow().isoformat()
+    root_ref = db.reference('/')  # trỏ đến gốc
+    payload = {
+        f"{sid}_temp": temp,
+        f"{sid}_humi": hum,
+        f"{sid}_mq2":  gas,
+        f"{sid}_fire": fire,
+        # nếu muốn lưu thêm metadata:
+        f"{sid}_addr": addr,
+        f"{sid}_timestamp": datetime.datetime.utcnow().isoformat()
     }
-    ref.set(data)
-    print(f"[{sid}] Data pushed to Firebase at {data['timestamp']}")
+    # Cập nhật các key ngay tại root
+    root_ref.update(payload)
+    print(f"[{sid}] Updated root keys: {', '.join(payload.keys())} @ {payload[f'{sid}_timestamp']}")
 
 # SIM module serial config
 try:
@@ -44,13 +47,14 @@ phone_number = "+849xxxxxxxx"
 
 # MQTT config
 MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT = 1883
+MQTT_PORT   = 1883
 MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
 
 # In-memory user store
 users = {"anh066214@gmail.com": "123456"}
 
 # In-memory system settings
+# (ngưỡng gas nếu cần vào code, ở đây không dùng để lưu root)
 t_system_settings = {"threshold": 2500, "alert_email": ""}
 
 # SMS sending
@@ -72,6 +76,7 @@ def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker with result code", rc)
     for topic, qos in MQTT_TOPICS:
         client.subscribe(topic, qos)
+
 
 def on_message(client, userdata, msg):
     try:
