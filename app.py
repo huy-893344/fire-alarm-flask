@@ -14,7 +14,7 @@ from flask import (
     redirect, url_for, session, flash
 )
 from flask_cors import CORS
-
+from flask import jsonify
 # ========== FIREBASE CONFIGURATION (Embed service account info directly) ==========
 # Paste your entire JSON service account key below, preserving line breaks
 service_account_info = {
