@@ -21,63 +21,72 @@
       </thead>
       <tbody id="sensor-body">
         <tr>
-          <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
+          <td colspan="5" class="text-center text-muted">Đang tải dữ liệu...</td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<script>
-async function loadData() {
-  try {
-    const response = await fetch("{{ url_for('api_data') }}");
-    const data = await response.json();
-    const tbody = document.getElementById('sensor-body');
-    tbody.innerHTML = '';
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    // Nhóm dữ liệu theo sid
-    const rows = {};
-    for (const [key, val] of Object.entries(data)) {
-      const parts = key.split('_');
-      const sid = parts[0];
-      const field = parts[1];
-      if (!rows[sid]) rows[sid] = { address: '', temp: '', hum: '', mq2: '', fire: '' };
-      if (field === 'address') rows[sid].address = val;
-      else if (field === 'temp') rows[sid].temp = val;
-      else if (field === 'humi') rows[sid].hum = val;
-      else if (field === 'mq2') rows[sid].mq2 = val;
-      else if (field === 'fire') rows[sid].fire = val;
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const firebaseConfig = {
+      apiKey: "AIzaSyC13VZFz4aOjfPhpU7rqjZ-F8Ja-4MJkcc",
+      authDomain: "pham-quoc-anh.firebaseapp.com",
+      databaseURL: "https://pham-quoc-anh-default-rtdb.firebaseio.com",
+      projectId: "pham-quoc-anh",
+      storageBucket: "pham-quoc-anh.firebasestorage.app",
+      messagingSenderId: "170698691755",
+      appId: "1:170698691755:web:30a490b90e2c803410d3ee"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const tbody = document.getElementById('sensor-body');
+
+    function updateTable(temp, humi, mq2, fire) {
+      tbody.innerHTML = '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>ESP32</td>
+        <td>${temp ?? '-'}</td>
+        <td>${humi ?? '-'}</td>
+        <td>${mq2 ?? '-'}</td>
+        <td>${fire == 1 ? '<span class="text-danger fw-bold">Có</span>' : 'Không'}</td>
+      `;
+      tbody.appendChild(tr);
     }
 
-    const sids = Object.keys(rows);
-    if (sids.length === 0) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>';
-      tbody.appendChild(tr);
-    } else {
-      sids.forEach(sid => {
-        const d = rows[sid];
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${d.address || sid}</td>
-          <td>${d.temp !== '' ? d.temp : '-'}</td>
-          <td>${d.hum !== '' ? d.hum : '-'}</td>
-          <td>${d.mq2 !== '' ? d.mq2 : '-'}</td>
-          <td>${d.fire !== '' ? (d.fire == 1 ? 'Có' : 'Không') : '-'}</td>
+    function loadAllValues() {
+      Promise.all([
+        db.ref('esp32_temp').get(),
+        db.ref('esp32_humi').get(),
+        db.ref('esp32_mq2').get(),
+        db.ref('esp32_lm393').get()
+      ]).then(([tempSnap, humiSnap, mq2Snap, fireSnap]) => {
+        updateTable(
+          tempSnap.val(),
+          humiSnap.val(),
+          mq2Snap.val(),
+          fireSnap.val()
+        );
+      }).catch(err => {
+        console.error("Lỗi khi đọc dữ liệu:", err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center text-danger">Không thể tải dữ liệu</td>
+          </tr>
         `;
-        tbody.appendChild(tr);
       });
     }
-  } catch (err) {
-    console.error('Error loading data:', err);
-  }
-}
 
-// Khi trang load xong và refresh định kỳ 5s
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
-  setInterval(loadData, 5000);
-});
+    loadAllValues();
+    setInterval(loadAllValues, 5000);
+  });
 </script>
 {% endblock %}
