@@ -113,6 +113,32 @@ def logout(): session.clear(); return redirect(url_for('login'))
 @app.route('/api/realtime')
 def api_realtime():
     return jsonify(db.reference('DataSensorRealTime').get() or {})
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    error = None
+    if request.method == "POST":
+        # Lấy dữ liệu từ form
+        username = request.form.get("username")  # nếu bạn collect username
+        email    = request.form.get("email")
+        pw       = request.form.get("password")
+        confirm  = request.form.get("confirm")
+
+        # Kiểm tra
+        if not username:
+            error = "Bạn phải nhập tên đăng nhập"
+        elif pw != confirm:
+            error = "Mật khẩu không khớp"
+        elif email in users:
+            error = "Email đã tồn tại"
+        else:
+            # Lưu vào in-memory store hoặc database thực
+            users[email] = pw
+            # Bạn có thể lưu thêm username nếu cần: user_names[email] = username
+            session["email"] = email
+            return redirect(url_for("dashboard"))
+
+    # GET hoặc có lỗi thì render lại form với thông báo
+    return render_template("register.html", error=error)
 
 @app.route('/stream')
 def stream():
