@@ -1,5 +1,24 @@
 /* styles.css */
+/* 1) Ảnh nền full màn hình */
+.login-page {
+  /* đường dẫn tới ảnh nền của bạn */
+  background: url('../img/login-bg.jpg') no-repeat center center fixed;
+  background-size: cover;
+  /* đặt container login ra giữa */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
 
+/* 2) Bọc login form trong lớp có nền trắng mờ */
+.login-container {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 400px;
+  width: 100%;
+}
 /* Container for a white, rounded, shadowed table */
 .table-container {
   background-color: #ffffff;
