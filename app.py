@@ -17,6 +17,25 @@ firebase_admin.initialize_app(cred, {
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
+# In-memory stores
+users = {"anh066214@gmail.com": "123456"}
+t_system_settings = {"threshold": 2500, "alert_email": ""}
+
+# Serial SIM module configuration
+try:
+    sim_serial = serial.Serial("COM7", 9600, timeout=1)
+except serial.SerialException:
+    sim_serial = None
+
+phone_number = "+849xxxxxxxx"
+
+# MQTT settings
+default_threshold = 2500
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_PORT = 1883
+MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
+
+
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
     """
     Push sensor data to Firebase Realtime Database root with timestamp.
@@ -34,19 +53,6 @@ def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
     root_ref.update(payload)
     print(f"[{sid}] Updated keys {list(payload.keys())} at {timestamp}")
 
-# Serial SIM module configuration
-try:
-    sim_serial = serial.Serial("COM7", 9600, timeout=1)
-except serial.SerialException:
-    sim_serial = None
-
-phone_number = "+849xxxxxxxx"
-
-# MQTT settings
-default_threshold = 2500
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT = 1883
-MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
 
 def send_sms(content):
     """
@@ -68,11 +74,13 @@ def send_sms(content):
     else:
         print("SIM module not available.")
 
+
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker, rc=", rc)
     for topic, qos in MQTT_TOPICS:
         client.subscribe(topic, qos)
+
 
 def on_message(client, userdata, msg):
     try:
@@ -86,10 +94,14 @@ def on_message(client, userdata, msg):
         print("MQTT parse error:", e, msg.payload)
         return
 
+    # Push to Firebase
     send_realtime_firebase(sid, addr, temp, hum, gas, fire)
+
+    # Check alert conditions
     threshold = t_system_settings.get("threshold", default_threshold)
     if fire == 1 or gas >= threshold:
         send_sms(f"ALERT: Node {sid} at {addr} - gas={gas}, fire={fire}")
+
 
 # Flask app setup
 app = Flask(__name__)
