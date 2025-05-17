@@ -16,19 +16,17 @@ from flask_cors import CORS
 # Determine path or JSON from environment
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # If GOOGLE_APPLICATION_CREDENTIALS is set, use that file path; otherwise default to project root key.json
-key_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, 'key.json'))
-
-# Load service account, support JSON string in env var FIREBASE_CREDENTIALS
-if os.environ.get('FIREBASE_CREDENTIALS'):
-    # Expect full JSON string in env
-    cred_dict = json.loads(os.environ['FIREBASE_CREDENTIALS'])
-    cred = credentials.Certificate(cred_dict)
-else:
-    cred = credentials.Certificate(key_path)
-
+# ====== CONFIGURATION ======
+# Load Firebase Admin SDK credentials from environment or local file
+key_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "key.json")
+cred = credentials.Certificate(key_path)
 firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
+    "databaseURL": os.environ.get(
+        "FIREBASE_DATABASE_URL",
+        "https://pham-quoc-anh-default-rtdb.firebaseio.com"
+    )
 })
+
 
 # In-memory stores
 users = {"anh066214@gmail.com": "123456"}
