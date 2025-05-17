@@ -15,7 +15,7 @@ from flask_cors import CORS
 # Load Firebase credentials and initialize Admin SDK with correct project URL
 cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://tutrungtambaochay-default-rtdb.firebaseio.com"
+    "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
 # Function to push sensor data directly to database root with keys based on sid
