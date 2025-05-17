@@ -16,38 +16,51 @@ document.addEventListener('DOMContentLoaded', () => {
     appId: "1:170698691755:web:30a490b90e2c803410d3ee"
   };
 
-  // 2) Initialize Firebase
+  // 2) Khởi tạo Firebase
   firebase.initializeApp(firebaseConfig);
 
-  // 3) Reference the DataSensorRealTime node in your database
+  // 3) Tham chiếu tới node DataSensorRealTime
   const dbRef = firebase.database().ref('DataSensorRealTime');
   const tbody = document.getElementById('sensor-data');
 
-  // 4) Listen for real-time updates
-  dbRef.on('value', snapshot => {
-    const data = snapshot.val();
-    tbody.innerHTML = '';
+  // 4) Nghe realtime
+  dbRef.on('value',
+    snapshot => {
+      const data = snapshot.val() || {};
+      tbody.innerHTML = '';
 
-    // Handle no-data case
-    if (!data || Object.keys(data).length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6">Chưa có dữ liệu</td></tr>';
-      return;
-    }
+      // Nếu chưa có node nào
+      if (Object.keys(data).length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-4">Chưa có dữ liệu</td>
+          </tr>
+        `;
+        return;
+      }
 
-    // Populate table rows (each child is a sensor node)
-    Object.entries(data).forEach(([sid, item]) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="px-4 py-2">${item.send_address || sid}</td>
-        <td class="px-4 py-2">${item.temperature != null ? item.temperature : '—'}</td>
-        <td class="px-4 py-2">${item.humidity    != null ? item.humidity    : '—'}</td>
-        <td class="px-4 py-2">${item.mq2         != null ? item.mq2         : '—'}</td>
-        <td class="px-4 py-2">${item.fire ? '<span class="text-red-600 font-semibold">Có</span>' : 'Không'}</td>
+      // Duyệt từng thiết bị
+      Object.entries(data).forEach(([sid, item]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.send_address || sid}</td>
+          <td>${item.temperature != null ? item.temperature : '—'}</td>
+          <td>${item.humidity    != null ? item.humidity    : '—'}</td>
+          <td>${item.mq2         != null ? item.mq2         : '—'}</td>
+          <td>${item.fire ? '<span class="text-danger fw-bold">Có</span>' : 'Không'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    },
+    error => {
+      console.error('Firebase read failed:', error);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-danger py-4">
+            Lỗi kết nối dữ liệu
+          </td>
+        </tr>
       `;
-      tbody.appendChild(tr);
-    });
-  }, error => {
-    console.error('Firebase read failed:', error);
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-red-600 py-6">Lỗi kết nối dữ liệu</td></tr>';
-  });
+    }
+  );
 });
