@@ -12,13 +12,28 @@ import serial
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response
 from flask_cors import CORS
 
-# ========== CONFIGURATION ==========
-# Firebase Admin SDK setup (ensure databaseURL matches your project)
-cred = credentials.Certificate("key.json")
+# ========== FIREBASE CONFIGURATION (Embed service account info directly) ==========
+# Replace placeholder values with your actual Firebase service account details
+service_account_info = {
+    "type": "service_account",
+    "project_id": "pham-quoc-anh-default-rtdb",
+    "private_key_id": "YOUR_PRIVATE_KEY_ID",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
+    "client_email": "firebase-adminsdk-xyz12@pham-quoc-anh-default-rtdb.iam.gserviceaccount.com",
+    "client_id": "123456789012345678901",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xyz12%40pham-quoc-anh-default-rtdb.iam.gserviceaccount.com"
+}
+
+# Initialize Firebase Admin SDK with embedded credentials
+cred = credentials.Certificate(service_account_info)
 firebase_admin.initialize_app(cred, {
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
+# ========== MQTT and Sensor Data Handling ==========
 # Function to push sensor data to RTDB under DataSensorRealTime/{sid}
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
     ref = db.reference('DataSensorRealTime')
@@ -33,7 +48,7 @@ def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
     ref.child(sid).set(payload)
     print(f"[{sid}] Pushed to DataSensorRealTime/{sid} @ {payload['timestamp']}")
 
-# SIM module serial config (optional)
+# Serial SIM module configuration (optional)
 try:
     sim_serial = serial.Serial("COM7", 9600, timeout=1)
 except serial.SerialException:
@@ -41,13 +56,16 @@ except serial.SerialException:
 
 phone_number = "+849xxxxxxxx"
 
-# MQTT config
+# MQTT settings
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_PORT   = 1883
+MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
+
 def on_connect(client, userdata, flags, rc):
     print("MQTT connected with rc=", rc)
     for topic, qos in MQTT_TOPICS:
         client.subscribe(topic, qos)
 
-# Callback when message arrives
 def on_message(client, userdata, msg):
     try:
         sid, addr, temp, hum, gas, fire = msg.payload.decode().split(',')
@@ -56,11 +74,11 @@ def on_message(client, userdata, msg):
         print("Error parsing MQTT payload:", e)
         return
     send_realtime_firebase(sid, addr, temp, hum, gas, fire)
-    # SMS alert if necessary
+    # SMS alert if needed
     if fire == 1 or gas >= t_system_settings.get("threshold", 2500):
         send_sms(f"ALERT: Node {sid}@{addr} - gas={gas}, fire={fire}")
 
-# SMS sending via SIM module
+# Function to send SMS via SIM module (optional)
 def send_sms(content):
     if sim_serial and sim_serial.is_open:
         try:
@@ -74,16 +92,11 @@ def send_sms(content):
     else:
         print("SIM module not available")
 
-# Initialize MQTT topics (must follow on_connect definition)
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT   = 1883
-MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
-
 # In-memory stores
 users = {"anh066214@gmail.com": "123456"}
 t_system_settings = {"threshold": 2500, "alert_email": ""}
 
-# Flask application
+# ========== Flask Application ==========
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change_me")
 CORS(app)
@@ -143,13 +156,11 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# API endpoint for front-end polling\ETwitter
 @app.route('/api/realtime')
 def api_realtime():
     data = db.reference('DataSensorRealTime').get() or {}
     return jsonify(data)
 
-# Server-Sent Events for real-time streaming
 @app.route('/stream')
 def stream():
     def event_stream():
