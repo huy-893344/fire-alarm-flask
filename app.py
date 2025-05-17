@@ -80,7 +80,9 @@ app.secret_key = os.environ.get("SECRET_KEY", "change_me")
 CORS(app)
 
 # In-memory user store
-users = {"admin@example.com": "secret"}
+# Lưu trữ tạm
+users = {"anh066214@gmail.com": "123456"}
+t_system_settings = {"threshold": 2500, "alert_email": ""}
 
 # Home: redirect to login
 @app.route("/")
