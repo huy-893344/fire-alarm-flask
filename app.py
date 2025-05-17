@@ -12,28 +12,27 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_cors import CORS
 
 # ========== CONFIGURATION ==========
-# Load Firebase credentials and initialize Admin SDK with correct project URL
 cred = credentials.Certificate("key.json")
 firebase_admin.initialize_app(cred, {
-    # --> Use the exact URL shown in your Realtime Database console (no region suffix)
     "databaseURL": "https://pham-quoc-anh-default-rtdb.firebaseio.com"
 })
 
-# Function to push sensor data directly to database root with keys based on sid
 def send_realtime_firebase(sid, addr, temp, hum, gas, fire):
+    """
+    Push sensor data to Firebase Realtime Database root with timestamp.
+    """
     root_ref = db.reference('/')
     timestamp = datetime.datetime.utcnow().isoformat()
     payload = {
         f"{sid}_address": addr,
-        f"{sid}_temp":      temp,
-        f"{sid}_humi":      hum,
-        f"{sid}_mq2":       gas,
-        f"{sid}_fire":      fire,
-        f"{sid}_updated":   timestamp
+        f"{sid}_temp": temp,
+        f"{sid}_humi": hum,
+        f"{sid}_mq2": gas,
+        f"{sid}_fire": fire,
+        f"{sid}_updated": timestamp
     }
-    # Update multiple keys at root without overwriting all data
     root_ref.update(payload)
-    print(f"[{sid}] Updated keys {list(payload.keys())} @ {timestamp}")
+    print(f"[{sid}] Updated keys {list(payload.keys())} at {timestamp}")
 
 # Serial SIM module configuration
 try:
@@ -46,21 +45,23 @@ phone_number = "+849xxxxxxxx"
 # MQTT settings
 default_threshold = 2500
 MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT   = 1883
+MQTT_PORT = 1883
 MQTT_TOPICS = [("datasensor1", 0), ("datasensor2", 0), ("datasensor3", 0)]
 
-# In-memory stores
-users = {"anh066214@gmail.com": "123456"}
-t_system_settings = {"threshold": default_threshold, "alert_email": ""}
-
-# Function to send SMS via SIM module
 def send_sms(content):
+    """
+    Send SMS alert via SIM module if available.
+    """
     if sim_serial and sim_serial.is_open:
         try:
-            sim_serial.write(b'AT\r'); time.sleep(0.5)
-            sim_serial.write(b'AT+CMGF=1\r'); time.sleep(0.5)
-            sim_serial.write(f'AT+CMGS="{phone_number}"\r'.encode()); time.sleep(0.5)
-            sim_serial.write(content.encode() + b'\x1A'); time.sleep(2)
+            sim_serial.write(b'AT\r')
+            time.sleep(0.5)
+            sim_serial.write(b'AT+CMGF=1\r')
+            time.sleep(0.5)
+            sim_serial.write(f'AT+CMGS="{phone_number}"\r'.encode())
+            time.sleep(0.5)
+            sim_serial.write(content.encode() + b'\x1A')
+            time.sleep(2)
             print("SMS sent:", content)
         except Exception as e:
             print("SMS error:", e)
@@ -68,7 +69,7 @@ def send_sms(content):
         print("SIM module not available.")
 
 # MQTT callbacks
- def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker, rc=", rc)
     for topic, qos in MQTT_TOPICS:
         client.subscribe(topic, qos)
@@ -78,8 +79,8 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode()
         sid, addr, temp, hum, gas, fire = payload.split(',')
         temp = float(temp)
-        hum  = float(hum)
-        gas  = float(gas)
+        hum = float(hum)
+        gas = float(gas)
         fire = int(fire)
     except Exception as e:
         print("MQTT parse error:", e, msg.payload)
@@ -99,22 +100,25 @@ CORS(app)
 def index():
     return redirect(url_for('login'))
 
-@app.route("/login", methods=["GET","POST"] )
+@app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
     if request.method == "POST":
-        e = request.form['email']; p = request.form['password']
+        e = request.form['email']
+        p = request.form['password']
         if e in users and users[e] == p:
             session['email'] = e
             return redirect(url_for('dashboard'))
         error = "Sai tài khoản hoặc mật khẩu"
     return render_template('login.html', error=error)
 
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
     if request.method == "POST":
-        e = request.form['email']; p = request.form['password']; c = request.form['confirm']
+        e = request.form['email']
+        p = request.form['password']
+        c = request.form['confirm']
         if p != c:
             error = "Mật khẩu không khớp"
         elif e in users:
@@ -128,7 +132,6 @@ def register():
 def dashboard():
     if 'email' not in session:
         return redirect(url_for('login'))
-    # Fetch latest sensor data from Realtime Database root
     sensor_data = db.reference('/').get() or {}
     return render_template('dashboard.html', sensor_data=sensor_data)
 
@@ -139,7 +142,7 @@ def api_data():
     data = db.reference('/').get() or {}
     return jsonify(data)
 
-@app.route("/setting", methods=["GET","POST"])
+@app.route("/setting", methods=["GET", "POST"])
 def setting():
     if 'email' not in session:
         return redirect(url_for('login'))
@@ -159,11 +162,9 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == "__main__":
-    # Start MQTT client in background thread
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
-    # Run Flask server
     app.run(host="0.0.0.0", port=5000, debug=True)
