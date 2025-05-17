@@ -7,14 +7,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   // 1) Firebase configuration – using your project credentials
   const firebaseConfig = {
-    apiKey: "AIzaSyA3mHhx4atZVfMe-cxgU3hbqHl3ieHuD4U",
-    authDomain: "tutrungtambaocahay.firebaseapp.com",
-    databaseURL: "https://tutrungtambaocahay-default-rtdb.firebaseio.com",
-    projectId: "tutrungtambaocahay",
-    storageBucket: "tutrungtambaocahay.appspot.com",
-    messagingSenderId: "553147068654",
-    appId: "1:553147068654:web:8274efbef19bacf47883ff",
-    measurementId: "G-DYC8NP2V13"
+    apiKey: "AIzaSyC13VZFz4aOjfPhpU7rqjZ-F8Ja-4MJkcc",
+    authDomain: "pham-quoc-anh.firebaseapp.com",
+    databaseURL: "https://pham-quoc-anh-default-rtdb.firebaseio.com",
+    projectId: "pham-quoc-anh",
+    storageBucket: "pham-quoc-anh.firebasestorage.app",
+    messagingSenderId: "170698691755",
+    appId: "1:170698691755:web:30a490b90e2c803410d3ee"
   };
 
   // 2) Initialize Firebase
